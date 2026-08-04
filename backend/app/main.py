@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from app.services.coingecko import get_ping
 
 app = FastAPI(
     title="Crypto Dashboard API",
@@ -13,3 +14,7 @@ def root():
         "status": "online",
         "message": "Crypto Dashboard API is running!"
     }
+
+@app.get("/ping")
+async def ping():
+    return await get_ping()
