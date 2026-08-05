@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.services.coingecko import get_ping
+from app.services.coingecko import get_ping, get_coin
 
 app = FastAPI(
     title="Crypto Dashboard API",
@@ -18,3 +18,14 @@ def root():
 @app.get("/ping")
 async def ping():
     return await get_ping()
+
+@app.get("/coins/{coin_id}")
+async def coin(coin_id: str):
+    coin = await get_coin(coin_id)
+
+    if coin is None:
+        return {
+            "error": "Coin not found"
+        }
+
+    return coin
