@@ -1,5 +1,10 @@
 from fastapi import FastAPI
-from app.services.coingecko import get_ping, get_coin
+from app.services.coingecko import (
+    get_ping,
+    get_coin,
+    search_coin,
+    get_trending
+)
 
 app = FastAPI(
     title="Crypto Dashboard API",
@@ -29,3 +34,16 @@ async def coin(coin_id: str):
         }
 
     return coin
+
+@app.get("/search")
+async def search(query: str):
+    results = await search_coin(query)
+    return {"results": results}
+
+@app.get("/search")
+async def search(query: str):
+    return await search_coin(query)
+
+@app.get("/trending")
+async def trending():
+    return await get_trending()
