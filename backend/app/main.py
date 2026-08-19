@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 
 from app.api import health, coins, market
+from app.database.database import Base, engine
+from app.database import models
 
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Crypto Dashboard API",
