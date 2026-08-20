@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api import health, coins, market
+from app.api import health, coins, market, watchlist
 from app.database.database import Base, engine
 from app.database import models
 
@@ -16,3 +16,4 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(coins.router)
 app.include_router(market.router)
+app.include_router(watchlist.router)
