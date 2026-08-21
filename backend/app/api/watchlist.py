@@ -43,3 +43,16 @@ def add_to_watchlist(
         "message": "Coin added to watchlist",
         "coin_id": new_coin.coin_id
     }
+
+@router.get("/watchlist")
+def get_watchlist(db: Session = Depends(get_db)):
+    coins = db.query(WatchlistCoin).all()
+
+    return [
+        {
+            "id": coin.id,
+            "coin_id": coin.coin_id,
+            "created_at": coin.created_at
+        }
+        for coin in coins
+    ]
