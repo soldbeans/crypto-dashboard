@@ -56,3 +56,28 @@ def get_watchlist(db: Session = Depends(get_db)):
         }
         for coin in coins
     ]
+
+@router.delete("/watchlist/{coin_id}")
+def remove_from_watchlist(
+    coin_id: str,
+    db: Session = Depends(get_db)
+):
+    coin = (
+        db.query(WatchlistCoin)
+        .filter(WatchlistCoin.coin_id == coin_id)
+        .first()
+    )
+
+    if coin is None:
+        return {
+            "message": "Coin is not in your watchlist",
+            "coin_id": coin_id
+        }
+
+    db.delete(coin)
+    db.commit()
+
+    return {
+        "message": "Coin removed from watchlist",
+        "coin_id": coin_id
+    }
