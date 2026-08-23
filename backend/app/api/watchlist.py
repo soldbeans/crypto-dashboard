@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database.database import SessionLocal
 from app.database.models import WatchlistCoin
+from app.services.coingecko import get_coins
 
 router = APIRouter()
 
@@ -45,17 +46,15 @@ def add_to_watchlist(
     }
 
 @router.get("/watchlist")
-def get_watchlist(db: Session = Depends(get_db)):
-    coins = db.query(WatchlistCoin).all()
+async def get_watchlist(db: Session = Depends(get_db)):
+    watchlist = db.query(WatchlistCoin).all()
 
-    return [
-        {
-            "id": coin.id,
-            "coin_id": coin.coin_id,
-            "created_at": coin.created_at
-        }
-        for coin in coins
-    ]
+    if not watchlist:
+        return []
+
+    coin_ids = [coin.coin_id for coin in watchlist]
+
+    return await get_coins(coin_ids)
 
 @router.delete("/watchlist/{coin_id}")
 def remove_from_watchlist(

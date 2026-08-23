@@ -141,3 +141,34 @@ async def get_markets(limit: int = 10):
             })
 
         return coins
+    
+async def get_coins(coin_ids: list[str]):
+    url = f"{BASE_URL}/coins/markets"
+
+    params = {
+        "vs_currency": "usd",
+        "ids": ",".join(coin_ids),
+        "sparkline": False
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+
+        data = response.json()
+
+        coins = []
+
+        for coin in data:
+            coins.append({
+                "id": coin["id"],
+                "name": coin["name"],
+                "symbol": coin["symbol"].upper(),
+                "price": coin["current_price"],
+                "market_cap": coin["market_cap"],
+                "change_24h": coin["price_change_percentage_24h"],
+                "high_24h": coin["high_24h"],
+                "low_24h": coin["low_24h"]
+            })
+
+        return coins
