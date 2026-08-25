@@ -172,3 +172,21 @@ async def get_coins(coin_ids: list[str]):
             })
 
         return coins
+
+async def get_coin_history(coin_id: str, days: int = 30):
+    url = f"{BASE_URL}/coins/{coin_id}/market_chart"
+
+    params = {
+        "vs_currency": "usd",
+        "days": days
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+
+        data = response.json()
+
+        return {
+            "prices": data["prices"]
+        }
