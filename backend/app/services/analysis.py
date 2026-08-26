@@ -47,3 +47,25 @@ def interpret_rsi(rsi: float | None) -> str:
         return "overbought"
 
     return "neutral"
+
+def calculate_sma(prices: list[float], period: int = 14) -> float | None:
+    if len(prices) < period:
+        return None
+
+    recent_prices = prices[-period:]
+
+    sma = sum(recent_prices) / period
+
+    return round(sma, 2)
+
+def interpret_sma(current_price: float, sma: float | None) -> str:
+    if sma is None:
+        return "insufficient_data"
+
+    if current_price > sma:
+        return "bullish"
+
+    if current_price < sma:
+        return "bearish"
+
+    return "neutral"
