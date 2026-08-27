@@ -5,7 +5,9 @@ from app.services.analysis import (
     calculate_rsi,
     interpret_rsi,
     calculate_sma,
-    interpret_sma
+    interpret_sma,
+    calculate_ema,
+    interpret_ema
 )
 
 router = APIRouter()
@@ -20,6 +22,7 @@ async def analyze_coin(coin_id: str):
 
     rsi = calculate_rsi(prices)
     sma = calculate_sma(prices)
+    ema = calculate_ema(prices)
 
     return {
         "coin": coin_id,
@@ -27,5 +30,7 @@ async def analyze_coin(coin_id: str):
         "rsi": rsi,
         "rsi_signal": interpret_rsi(rsi),
         "sma": sma,
-        "sma_signal": interpret_sma(current_price, sma)
+        "sma_signal": interpret_sma(current_price, sma),
+        "ema": ema,
+        "ema_signal": interpret_ema(current_price, ema)
     }

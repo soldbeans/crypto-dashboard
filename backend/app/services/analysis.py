@@ -69,3 +69,30 @@ def interpret_sma(current_price: float, sma: float | None) -> str:
         return "bearish"
 
     return "neutral"
+
+def calculate_ema(prices: list[float], period: int = 14) -> float | None:
+    if len(prices) < period:
+        return None
+
+    sma = sum(prices[:period]) / period
+
+    multiplier = 2 / (period + 1)
+
+    ema = sma
+
+    for price in prices[period:]:
+        ema = (price - ema) * multiplier + ema
+
+    return round(ema, 2)
+
+def interpret_ema(current_price: float, ema: float | None) -> str:
+    if ema is None:
+        return "insufficient_data"
+
+    if current_price > ema:
+        return "bullish"
+
+    if current_price < ema:
+        return "bearish"
+
+    return "neutral"
