@@ -70,6 +70,84 @@ def interpret_sma(current_price: float, sma: float | None) -> str:
 
     return "neutral"
 
+# Helper function to calculate EMA series for MACD calculation #
+
+def calculate_ema_series(
+    prices: list[float],
+    period: int
+) -> list[float]:
+    if len(prices) < period:
+        return []
+
+    multiplier = 2 / (period + 1)
+
+    initial_ema = sum(prices[:period]) / period
+
+    ema_values = [initial_ema]
+
+    ema = initial_ema
+
+    for price in prices[period:]:
+        ema = (price - ema) * multiplier + ema
+        ema_values.append(ema)
+
+    return ema_values
+
+# Function to calculate MACD, Signal Line, and Histogram #
+
+def calculate_macd(
+    prices: list[float],
+    fast_period: int = 12,
+    slow_period: int = 26,
+    signal_period: int = 9
+) -> dict | None:
+
+    if len(prices) < slow_period:
+        return None
+
+    fast_ema = calculate_ema_series(prices, fast_period)
+    slow_ema = calculate_ema_series(prices, slow_period)
+
+    offset = slow_period - fast_period
+
+    macd_line = [
+        fast_ema[i + offset] - slow_ema[i]
+        for i in range(len(slow_ema))
+    ]
+
+    if len(macd_line) < signal_period:
+        return None
+
+    signal_line = calculate_ema_series(
+        macd_line,
+        signal_period
+    )
+
+    macd_current = macd_line[-1]
+    signal_current = signal_line[-1]
+
+    histogram = macd_current - signal_current
+
+    return {
+        "macd": round(macd_current, 4),
+        "signal": round(signal_current, 4),
+        "histogram": round(histogram, 4)
+    }
+
+# Function to interpret MACD values and provide a simple signal #
+
+def interpret_macd(macd: dict | None) -> str:
+    if macd is None:
+        return "insufficient_data"
+
+    if macd["macd"] > macd["signal"]:
+        return "bullish"
+
+    if macd["macd"] < macd["signal"]:
+        return "bearish"
+
+    return "neutral"
+
 def calculate_ema(prices: list[float], period: int = 14) -> float | None:
     if len(prices) < period:
         return None
