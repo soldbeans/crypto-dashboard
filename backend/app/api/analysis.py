@@ -17,9 +17,11 @@ router = APIRouter()
 
 @router.get("/coins/{coin_id}/analysis")
 async def analyze_coin(coin_id: str):
+
     history = await get_coin_history(coin_id)
 
     prices = [price[1] for price in history["prices"]]
+
     current_price = prices[-1]
 
     rsi = calculate_rsi(prices)
@@ -28,18 +30,26 @@ async def analyze_coin(coin_id: str):
     macd = calculate_macd(prices)
 
     return {
-    "coin": coin_id,
-    "current_price": current_price,
-
-    "rsi": rsi,
-    "rsi_signal": interpret_rsi(rsi),
-
-    "sma": sma,
-    "sma_signal": interpret_sma(current_price, sma),
-
-    "ema": ema,
-    "ema_signal": interpret_ema(current_price, ema),
-
-    "macd": macd,
-    "macd_signal": interpret_macd(macd)
-}
+        "coin": coin_id,
+        "current_price": current_price,
+        "indicators": {
+            "rsi": {
+                "value": rsi,
+                "signal": interpret_rsi(rsi)
+            },
+            "sma": {
+                "value": sma,
+                "signal": interpret_sma(current_price, sma)
+            },
+            "ema": {
+                "value": ema,
+                "signal": interpret_ema(current_price, ema)
+            },
+            "macd": {
+                "value": macd["macd"] if macd else None,
+                "signal_line": macd["signal"] if macd else None,
+                "histogram": macd["histogram"] if macd else None,
+                "trend": interpret_macd(macd)
+            }
+        }
+    }

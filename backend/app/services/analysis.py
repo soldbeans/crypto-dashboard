@@ -76,6 +76,7 @@ def calculate_ema_series(
     prices: list[float],
     period: int
 ) -> list[float]:
+
     if len(prices) < period:
         return []
 
@@ -102,7 +103,7 @@ def calculate_macd(
     signal_period: int = 9
 ) -> dict | None:
 
-    if len(prices) < slow_period:
+    if len(prices) < slow_period + signal_period - 1:
         return None
 
     fast_ema = calculate_ema_series(prices, fast_period)
@@ -110,18 +111,21 @@ def calculate_macd(
 
     offset = slow_period - fast_period
 
-    macd_line = [
-        fast_ema[i + offset] - slow_ema[i]
-        for i in range(len(slow_ema))
-    ]
+    macd_line = []
 
-    if len(macd_line) < signal_period:
-        return None
+    for i in range(len(slow_ema)):
+        fast_value = fast_ema[i + offset]
+        slow_value = slow_ema[i]
+
+        macd_line.append(fast_value - slow_value)
 
     signal_line = calculate_ema_series(
         macd_line,
         signal_period
     )
+
+    if not signal_line:
+        return None
 
     macd_current = macd_line[-1]
     signal_current = signal_line[-1]
