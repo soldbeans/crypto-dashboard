@@ -11,7 +11,9 @@ from app.services.analysis import (
     calculate_macd,
     interpret_macd,
     calculate_signal_score,
-    interpret_signal_score
+    interpret_signal_score,
+    generate_signal_reasons,
+    interpret_signal_strength,
 )
 
 router = APIRouter()
@@ -43,10 +45,18 @@ async def analyze_coin(coin_id: str):
         rsi_signal,
         sma_signal,
         ema_signal,
-        macd_signal
+        macd
     )
 
     final_recommendation = interpret_signal_score(signal_score)
+    signal_strength = interpret_signal_strength(signal_score)
+    
+    signal_reasons = generate_signal_reasons(
+        rsi_signal,
+        sma_signal,
+        ema_signal,
+        macd_signal
+    )
 
     return {
         "coin": coin_id,
@@ -78,6 +88,8 @@ async def analyze_coin(coin_id: str):
 
         "overall": {
             "score": signal_score,
-            "recommendation": final_recommendation
+            "recommendation": final_recommendation,
+            "strength": signal_strength,
+            "reasons": signal_reasons
         }
     }

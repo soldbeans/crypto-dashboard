@@ -149,6 +149,21 @@ def interpret_macd(macd: dict | None) -> str:
 
     return "neutral"
 
+# Function to calculate a score based on the MACD histogram value #
+def calculate_macd_score(macd: dict | None) -> int:
+    if macd is None:
+        return 0
+
+    histogram = macd["histogram"]
+
+    if histogram > 0:
+        return 2
+
+    if histogram < 0:
+        return -2
+
+    return 0
+
 def calculate_ema(prices: list[float], period: int = 14) -> float | None:
     if len(prices) < period:
         return None
@@ -181,34 +196,88 @@ def calculate_signal_score(
     rsi_signal: str,
     sma_signal: str,
     ema_signal: str,
-    macd_signal: str
+    macd: dict | None
 ) -> int:
 
     score = 0
 
-    signals = [
-        rsi_signal,
-        sma_signal,
-        ema_signal,
-        macd_signal
-    ]
+    # RSI
+    if rsi_signal == "oversold":
+        score += 1
+    elif rsi_signal == "overbought":
+        score -= 1
 
-    for signal in signals:
-        if signal == "bullish" or signal == "oversold":
-            score += 1
+    # SMA
+    if sma_signal == "bullish":
+        score += 2
+    elif sma_signal == "bearish":
+        score -= 2
 
-        elif signal == "bearish" or signal == "overbought":
-            score -= 1
+    # EMA
+    if ema_signal == "bullish":
+        score += 2
+    elif ema_signal == "bearish":
+        score -= 2
+
+    # MACD
+    score += calculate_macd_score(macd)
 
     return score
 
 # Function to interpret the combined signal score and provide a final recommendation #
 def interpret_signal_score(score: int) -> str:
 
-    if score >= 3:
+    if score >= 5:
         return "BUY"
 
-    if score <= -3:
+    if score <= -5:
         return "SELL"
 
     return "HOLD"
+
+# Function to generate reasons for the final recommendation based on individual indicator signals #
+def generate_signal_reasons(
+    rsi_signal: str,
+    sma_signal: str,
+    ema_signal: str,
+    macd_signal: str
+) -> list[str]:
+
+    reasons = []
+
+    if rsi_signal == "oversold":
+        reasons.append("RSI indicates potentially oversold conditions.")
+    elif rsi_signal == "overbought":
+        reasons.append("RSI indicates potentially overbought conditions.")
+
+    if sma_signal == "bullish":
+        reasons.append("Price is above the SMA.")
+    elif sma_signal == "bearish":
+        reasons.append("Price is below the SMA.")
+
+    if ema_signal == "bullish":
+        reasons.append("Price is above the EMA.")
+    elif ema_signal == "bearish":
+        reasons.append("Price is below the EMA.")
+
+    if macd_signal == "bullish":
+        reasons.append("MACD indicates bullish momentum.")
+    elif macd_signal == "bearish":
+        reasons.append("MACD indicates bearish momentum.")
+
+    if not reasons:
+        reasons.append("The indicators do not currently show a strong directional signal.")
+
+    return reasons
+
+# Function to interpret the strength of the combined signal score #
+def interpret_signal_strength(score: int) -> str:
+    absolute_score = abs(score)
+
+    if absolute_score >= 6:
+        return "strong"
+
+    if absolute_score >= 3:
+        return "moderate"
+
+    return "weak"
