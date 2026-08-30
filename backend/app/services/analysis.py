@@ -71,7 +71,6 @@ def interpret_sma(current_price: float, sma: float | None) -> str:
     return "neutral"
 
 # Helper function to calculate EMA series for MACD calculation #
-
 def calculate_ema_series(
     prices: list[float],
     period: int
@@ -95,7 +94,6 @@ def calculate_ema_series(
     return ema_values
 
 # Function to calculate MACD, Signal Line, and Histogram #
-
 def calculate_macd(
     prices: list[float],
     fast_period: int = 12,
@@ -139,7 +137,6 @@ def calculate_macd(
     }
 
 # Function to interpret MACD values and provide a simple signal #
-
 def interpret_macd(macd: dict | None) -> str:
     if macd is None:
         return "insufficient_data"
@@ -178,3 +175,40 @@ def interpret_ema(current_price: float, ema: float | None) -> str:
         return "bearish"
 
     return "neutral"
+
+# Function to calculate a combined signal score based on individual indicator signals #
+def calculate_signal_score(
+    rsi_signal: str,
+    sma_signal: str,
+    ema_signal: str,
+    macd_signal: str
+) -> int:
+
+    score = 0
+
+    signals = [
+        rsi_signal,
+        sma_signal,
+        ema_signal,
+        macd_signal
+    ]
+
+    for signal in signals:
+        if signal == "bullish" or signal == "oversold":
+            score += 1
+
+        elif signal == "bearish" or signal == "overbought":
+            score -= 1
+
+    return score
+
+# Function to interpret the combined signal score and provide a final recommendation #
+def interpret_signal_score(score: int) -> str:
+
+    if score >= 3:
+        return "BUY"
+
+    if score <= -3:
+        return "SELL"
+
+    return "HOLD"
