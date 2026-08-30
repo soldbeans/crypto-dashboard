@@ -173,7 +173,7 @@ async def get_coins(coin_ids: list[str]):
 
         return coins
 
-async def get_coin_history(coin_id: str, days: int = 90):
+async def get_coin_history(coin_id: str, days: int = 180):
     url = f"{BASE_URL}/coins/{coin_id}/market_chart"
 
     params = {
@@ -188,6 +188,17 @@ async def get_coin_history(coin_id: str, days: int = 90):
 
         data = response.json()
 
+        if not data.get("prices"):
+            return None
+        
+        prices = []
+
+        for timestamp, price in data["prices"]:
+            prices.append({
+                "timestamp": timestamp,
+                "price": price
+            })
+
         return {
-            "prices": data["prices"]
+            "prices": prices
         }

@@ -101,7 +101,9 @@ def calculate_macd(
     signal_period: int = 9
 ) -> dict | None:
 
-    if len(prices) < slow_period + signal_period - 1:
+    required_points = slow_period + signal_period - 1
+
+    if len(prices) < required_points:
         return None
 
     fast_ema = calculate_ema_series(prices, fast_period)

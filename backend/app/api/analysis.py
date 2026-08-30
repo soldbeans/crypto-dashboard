@@ -24,7 +24,21 @@ async def analyze_coin(coin_id: str):
 
     history = await get_coin_history(coin_id)
 
-    prices = [price[1] for price in history["prices"]]
+    if history is None:
+        return {
+            "coin": coin_id,
+            "error": "No historical data available for this coin."
+        }
+
+    prices = [item["price"] for item in history["prices"]]
+
+    if len(prices) < 34:
+        return {
+            "coin": coin_id,
+            "error": "Insufficient historical data for technical analysis.",
+            "required_data_points": 34,
+            "available_data_points": len(prices)
+        }
 
     current_price = prices[-1]
 
