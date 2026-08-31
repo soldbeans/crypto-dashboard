@@ -184,8 +184,22 @@ async def get_coin_history(coin_id: str, days: int = 180):
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url, params=params)
+        
+        if response.status_code == 404:
+            return None
+        
+        if response.status_code == 429:
+            raise httpx.HTTPStatusError(
+                "CoinGecko API rate limit exceeded. Please try again later.",
+            )
+        
+        if response.status_code >= 500:
+            raise httpx.HTTPStatusError(
+                "CoinGecko API server error. Please try again later.",
+            )
+        
         response.raise_for_status()
-
+        
         data = response.json()
 
         if not data.get("prices"):

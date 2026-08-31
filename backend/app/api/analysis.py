@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.services.coingecko import get_coin_history
 from app.services.analysis import (
@@ -15,30 +15,46 @@ from app.services.analysis import (
     generate_signal_reasons,
     interpret_signal_strength,
 )
+from app.models.analysis import AnalysisResponse
 
 router = APIRouter()
 
 
-@router.get("/coins/{coin_id}/analysis")
+@router.get(
+    "/coins/{coin_id}/analysis",
+    response_model=AnalysisResponse
+)
 async def analyze_coin(coin_id: str):
 
-    history = await get_coin_history(coin_id)
+    try:
+        history = await get_coin_history(coin_id)
+    except RuntimeError as error:
+        message = str(error)
+
+        if "rate limit" in message.lower():
+            raise HTTPException(
+                status_code=429,
+                detail=message
+            )
+
+        raise HTTPException(
+            status_code=503,
+            detail=message
+        )
 
     if history is None:
-        return {
-            "coin": coin_id,
-            "error": "No historical data available for this coin."
-        }
+        raise HTTPException(
+            status_code=404,
+            detail="No historical data available for this coin."
+        )
 
     prices = [item["price"] for item in history["prices"]]
 
     if len(prices) < 34:
-        return {
-            "coin": coin_id,
-            "error": "Insufficient historical data for technical analysis.",
-            "required_data_points": 34,
-            "available_data_points": len(prices)
-        }
+        raise HTTPException(
+            status_code=422,
+            detail="Insufficient historical data for technical analysis."
+        )
 
     current_price = prices[-1]
 
