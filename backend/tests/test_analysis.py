@@ -5,6 +5,10 @@ from app.services.analysis import (
     calculate_macd,
     calculate_signal_score,
     interpret_signal_score,
+    interpret_rsi,
+    interpret_sma,
+    interpret_ema,
+    interpret_macd,
 )
 
 
@@ -155,3 +159,53 @@ def test_interpret_signal_score_buy_boundary():
 def test_interpret_signal_score_sell_boundary():
     assert interpret_signal_score(-5) == "SELL"
     assert interpret_signal_score(-4) == "HOLD"
+    
+
+# interpret test
+def test_interpret_rsi():
+    assert interpret_rsi(None) == "insufficient_data"
+    assert interpret_rsi(29) == "oversold"
+    assert interpret_rsi(30) == "neutral"
+    assert interpret_rsi(50) == "neutral"
+    assert interpret_rsi(70) == "neutral"
+    assert interpret_rsi(71) == "overbought"
+
+
+def test_interpret_sma():
+    assert interpret_sma(110, 100) == "bullish"
+    assert interpret_sma(90, 100) == "bearish"
+    assert interpret_sma(100, 100) == "neutral"
+    assert interpret_sma(100, None) == "insufficient_data"
+
+
+def test_interpret_ema():
+    assert interpret_ema(110, 100) == "bullish"
+    assert interpret_ema(90, 100) == "bearish"
+    assert interpret_ema(100, 100) == "neutral"
+    assert interpret_ema(100, None) == "insufficient_data"
+
+
+def test_interpret_macd():
+    assert interpret_macd(None) == "insufficient_data"
+
+    bullish_macd = {
+        "macd": 5.0,
+        "signal": 3.0,
+        "histogram": 2.0
+    }
+
+    bearish_macd = {
+        "macd": 2.0,
+        "signal": 4.0,
+        "histogram": -2.0
+    }
+
+    neutral_macd = {
+        "macd": 3.0,
+        "signal": 3.0,
+        "histogram": 0.0
+    }
+
+    assert interpret_macd(bullish_macd) == "bullish"
+    assert interpret_macd(bearish_macd) == "bearish"
+    assert interpret_macd(neutral_macd) == "neutral"
