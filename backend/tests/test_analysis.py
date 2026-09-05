@@ -5,10 +5,12 @@ from app.services.analysis import (
     calculate_macd,
     calculate_signal_score,
     interpret_signal_score,
+    interpret_signal_strength,
     interpret_rsi,
     interpret_sma,
     interpret_ema,
     interpret_macd,
+    generate_signal_reasons,
 )
 
 
@@ -209,3 +211,72 @@ def test_interpret_macd():
     assert interpret_macd(bullish_macd) == "bullish"
     assert interpret_macd(bearish_macd) == "bearish"
     assert interpret_macd(neutral_macd) == "neutral"
+
+
+def test_macd_returns_none_with_insufficient_data():
+    prices = list(range(33))
+
+    result = calculate_macd(prices)
+
+    assert result is None
+
+
+def test_signal_score_mixed_signals_returns_neutral_score():
+    macd = {
+        "macd": 0.0,
+        "signal": 0.0,
+        "histogram": 0.0
+    }
+
+    result = calculate_signal_score(
+        rsi_signal="neutral",
+        sma_signal="bullish",
+        ema_signal="bearish",
+        macd=macd
+    )
+
+    assert result == 0
+    
+
+def test_interpret_signal_strength():
+    assert interpret_signal_strength(0) == "weak"
+    assert interpret_signal_strength(2) == "weak"
+    assert interpret_signal_strength(3) == "moderate"
+    assert interpret_signal_strength(5) == "moderate"
+    assert interpret_signal_strength(6) == "strong"
+    assert interpret_signal_strength(7) == "strong"
+
+    assert interpret_signal_strength(-2) == "weak"
+    assert interpret_signal_strength(-3) == "moderate"
+    assert interpret_signal_strength(-5) == "moderate"
+    assert interpret_signal_strength(-6) == "strong"
+    assert interpret_signal_strength(-7) == "strong"
+    
+    
+def test_generate_signal_reasons_bullish_case():
+    reasons = generate_signal_reasons(
+        rsi_signal="oversold",
+        sma_signal="bullish",
+        ema_signal="bullish",
+        macd_signal="bullish",
+    )
+
+    assert reasons == [
+        "RSI indicates potentially oversold conditions.",
+        "Price is above the SMA.",
+        "Price is above the EMA.",
+        "MACD indicates bullish momentum.",
+    ]
+
+
+def test_generate_signal_reasons_neutral_case():
+    reasons = generate_signal_reasons(
+        rsi_signal="neutral",
+        sma_signal="neutral",
+        ema_signal="neutral",
+        macd_signal="neutral",
+    )
+
+    assert reasons == [
+        "The indicators do not currently show a strong directional signal."
+    ]
