@@ -24,9 +24,20 @@ type TrendingResponse = {
   coins: TrendingCoin[];
 };
 
+type SearchCoin = {
+  id: string;
+  name: string;
+  symbol: string;
+  market_cap_rank: number | null;
+  thumb: string;
+};
+
 function App() {
   const [globalMarket, setGlobalMarket] = useState<GlobalMarket | null>(null);
   const [trending, setTrending] = useState<TrendingResponse | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchCoin[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     async function fetchGlobalMarket() {
@@ -49,6 +60,29 @@ function App() {
 
   }, []);
 
+  async function handleSearch(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/search?query=${encodeURIComponent(searchQuery)}`
+      );
+
+      const data: SearchCoin[] = await response.json();
+
+      setSearchResults(data);
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -59,6 +93,43 @@ function App() {
       </header>
 
       <main className="dashboard">
+        <section className="dashboard-section">
+          <h2>Coin Search</h2>
+
+          <form className="search-form" onSubmit={handleSearch}>
+            <input
+              type="text"
+              placeholder="Search Bitcoin, Ethereum..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+
+            <button type="submit">
+              Search
+            </button>
+          </form>
+
+          {isSearching && (
+            <div className="placeholder-card">
+              Searching...
+            </div>
+          )}
+
+          {!isSearching && searchResults.length > 0 && (
+            <div className="search-results">
+              {searchResults.slice(0, 5).map((coin) => (
+                <div className="search-result" key={coin.id}>
+                  <div className="search-result-info">
+                    <strong>{coin.name}</strong>
+                    <span>{coin.symbol}</span>
+                  </div>
+
+                  <span>{coin.id}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
         <section className="dashboard-section">
           <h2>Global Market</h2>
 
