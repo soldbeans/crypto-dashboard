@@ -32,12 +32,25 @@ type SearchCoin = {
   thumb: string;
 };
 
+type WatchlistCoin = {
+  id: string;
+  name: string;
+  symbol: string;
+  price: number;
+  market_cap: number;
+  change_24h: number;
+  high_24h: number;
+  low_24h: number;
+};
+
 function App() {
   const [globalMarket, setGlobalMarket] = useState<GlobalMarket | null>(null);
   const [trending, setTrending] = useState<TrendingResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchCoin[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [watchlist, setWatchlist] = useState<WatchlistCoin[]>([]);
+  const [isLoadingWatchlist, setIsLoadingWatchlist] = useState(true);
 
   useEffect(() => {
     async function fetchGlobalMarket() {
@@ -57,6 +70,16 @@ function App() {
     }
 
     fetchTrending();
+
+    async function fetchWatchlist() {
+      const response = await fetch("http://127.0.0.1:8000/watchlist");
+      const data = await response.json();
+
+      setWatchlist(data);
+      setIsLoadingWatchlist(false);
+    }
+
+    fetchWatchlist();
 
   }, []);
 
@@ -195,6 +218,38 @@ function App() {
               Loading trending coins...
             </div>
           )}
+        </section>
+        <section className="dashboard-section">
+              <h2>Watchlist</h2>
+
+              {isLoadingWatchlist ? (
+                <div className="placeholder-card">
+                  Loading watchlist...
+                </div>
+              ) : watchlist.length > 0 ? (
+                <div className="watchlist-list">
+                  {watchlist.map((coin) => (
+                    <div className="watchlist-item" key={coin.id}>
+                      <div className="watchlist-main">
+                        <strong>{coin.name}</strong>
+                        <span>{coin.symbol}</span>
+                      </div>
+
+                      <div className="watchlist-price">
+                        <strong>${coin.price.toLocaleString()}</strong>
+                        <span>
+                          {coin.change_24h >= 0 ? "+" : ""}
+                          {coin.change_24h.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="placeholder-card">
+                  Your watchlist is empty.
+                </div>
+              )}
         </section>
       </main>
     </div>
