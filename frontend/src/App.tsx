@@ -106,6 +106,32 @@ function App() {
     }
   }
 
+  async function addToWatchlist(coin: SearchCoin) {
+  const response = await fetch("http://127.0.0.1:8000/watchlist", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      coin_id: coin.id,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error("Failed to add coin to watchlist");
+    return;
+  }
+
+  const watchlistResponse = await fetch(
+    "http://127.0.0.1:8000/watchlist"
+  );
+
+  const updatedWatchlist: WatchlistCoin[] =
+    await watchlistResponse.json();
+
+  setWatchlist(updatedWatchlist);
+}
+
   return (
     <div className="app">
       <header className="header">
@@ -145,9 +171,15 @@ function App() {
                   <div className="search-result-info">
                     <strong>{coin.name}</strong>
                     <span>{coin.symbol}</span>
+                    <span>{coin.id}</span>
                   </div>
 
-                  <span>{coin.id}</span>
+                  <button
+                    className="watchlist-button"
+                    onClick={() => addToWatchlist(coin)}
+                  >
+                    Add
+                  </button>
                 </div>
               ))}
             </div>
