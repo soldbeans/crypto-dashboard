@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
 type GlobalMarket = {
   market_cap_usd: number;
   volume_24h_usd: number;
@@ -43,6 +52,15 @@ type WatchlistCoin = {
   low_24h: number;
 };
 
+type HistoryPoint = {
+  timestamp: number;
+  price: number;
+};
+
+type HistoryResponse = {
+  prices: HistoryPoint[];
+};
+
 function App() {
   const [globalMarket, setGlobalMarket] = useState<GlobalMarket | null>(null);
   const [trending, setTrending] = useState<TrendingResponse | null>(null);
@@ -51,6 +69,9 @@ function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [watchlist, setWatchlist] = useState<WatchlistCoin[]>([]);
   const [isLoadingWatchlist, setIsLoadingWatchlist] = useState(true);
+  const [selectedCoin, setSelectedCoin] = useState<SearchCoin | null>(null);
+  const [priceHistory, setPriceHistory] = useState<HistoryPoint[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   useEffect(() => {
     async function fetchGlobalMarket() {
@@ -130,8 +151,59 @@ function App() {
     await watchlistResponse.json();
 
   setWatchlist(updatedWatchlist);
+
 }
 
+async function loadCoinHistory(coin: SearchCoin) {
+  setSelectedCoin(coin);
+  setIsLoadingHistory(true);
+  setPriceHistory([]);
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/coins/${coin.id}/history`
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load price history: ${response.status}`
+      );
+    }
+
+    const data: HistoryResponse = await response.json();
+
+    console.log("History response:", data);
+
+    if (!Array.isArray(data.prices)) {
+      throw new Error("Unexpected history response format.");
+    }
+
+    setPriceHistory(data.prices);
+  } catch (error) {
+    console.error("Failed to load coin history:", error);
+    setPriceHistory([]);
+  } finally {
+    setIsLoadingHistory(false);
+  }
+}
+
+  async function removeFromWatchlist(coinId: string) {
+  const response = await fetch(
+    `http://127.0.0.1:8000/watchlist/${coinId}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    console.error("Failed to remove coin from watchlist");
+    return;
+  }
+
+  setWatchlist((currentWatchlist) =>
+    currentWatchlist.filter((coin) => coin.id !== coinId)
+  );
+}
   return (
     <div className="app">
       <header className="header">
@@ -179,6 +251,12 @@ function App() {
                     onClick={() => addToWatchlist(coin)}
                   >
                     Add
+                  </button>
+                  <button
+                    className="watchlist-button"
+                    onClick={() => loadCoinHistory(coin)}
+                  >
+                    View
                   </button>
                 </div>
               ))}
@@ -267,12 +345,21 @@ function App() {
                         <span>{coin.symbol}</span>
                       </div>
 
-                      <div className="watchlist-price">
-                        <strong>${coin.price.toLocaleString()}</strong>
-                        <span>
-                          {coin.change_24h >= 0 ? "+" : ""}
-                          {coin.change_24h.toFixed(2)}%
-                        </span>
+                      <div className="watchlist-actions">
+                        <div className="watchlist-price">
+                          <strong>${coin.price.toLocaleString()}</strong>
+                          <span>
+                            {coin.change_24h >= 0 ? "+" : ""}
+                            {coin.change_24h.toFixed(2)}%
+                          </span>
+                        </div>
+
+                        <button
+                          className="remove-button"
+                          onClick={() => removeFromWatchlist(coin.id)}
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -283,6 +370,58 @@ function App() {
                 </div>
               )}
         </section>
+        <section className="dashboard-section">
+                        <h2>
+                Historical Price
+                {selectedCoin && ` — ${selectedCoin.name}`}
+              </h2>
+
+              {isLoadingHistory ? (
+                <div className="placeholder-card">
+                  Loading price history...
+                </div>
+              ) : priceHistory.length > 0 ? (
+                <div className="chart-container">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={priceHistory}>
+                      <XAxis
+                        dataKey="timestamp"
+                        tickFormatter={(timestamp) =>
+                          new Date(Number(timestamp)).toLocaleDateString()
+                        }
+                      />
+
+                      <YAxis
+                        domain={["auto", "auto"]}
+                        tickFormatter={(value) =>
+                          `$${Number(value).toLocaleString()}`
+                        }
+                      />
+
+                      <Tooltip
+                        labelFormatter={(timestamp) =>
+                          new Date(Number(timestamp)).toLocaleDateString()
+                        }
+                        formatter={(value) => [
+                          `$${Number(value).toLocaleString()}`,
+                          "Price",
+                        ]}
+                      />
+
+                      <Line
+                        type="monotone"
+                        dataKey="price"
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="placeholder-card">
+                  Select a coin to view its price history.
+                </div>
+              )}
+          </section>
       </main>
     </div>
   );
