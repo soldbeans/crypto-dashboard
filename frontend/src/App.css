@@ -192,3 +192,41 @@
 .remove-button:hover {
   opacity: 0.8;
 }
+
+.indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.indicator-card {
+  padding: 18px;
+  border: 1px solid #444;
+  border-radius: 12px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.indicator-card span,
+.indicator-card small {
+  opacity: 0.7;
+}
+
+.indicator-card strong {
+  font-size: 1.2rem;
+}
+
+.macd-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .indicator-grid {
+    grid-template-columns: 1fr;
+  }
+}

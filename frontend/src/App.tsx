@@ -61,6 +61,35 @@ type HistoryResponse = {
   prices: HistoryPoint[];
 };
 
+type IndicatorValue = {
+  value: number | null;
+  signal: string;
+};
+
+type MACDValue = {
+  value: number | null;
+  signal_line: number | null;
+  histogram: number | null;
+  trend: string;
+};
+
+type AnalysisResponse = {
+  coin: string;
+  current_price: number;
+  indicators: {
+    rsi: IndicatorValue;
+    sma: IndicatorValue;
+    ema: IndicatorValue;
+    macd: MACDValue;
+  };
+  overall: {
+    score: number;
+    recommendation: string;
+    strength: string;
+    reasons: string[];
+  };
+};
+
 function App() {
   const [globalMarket, setGlobalMarket] = useState<GlobalMarket | null>(null);
   const [trending, setTrending] = useState<TrendingResponse | null>(null);
@@ -72,6 +101,8 @@ function App() {
   const [selectedCoin, setSelectedCoin] = useState<SearchCoin | null>(null);
   const [priceHistory, setPriceHistory] = useState<HistoryPoint[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
   useEffect(() => {
     async function fetchGlobalMarket() {
@@ -157,33 +188,40 @@ function App() {
 async function loadCoinHistory(coin: SearchCoin) {
   setSelectedCoin(coin);
   setIsLoadingHistory(true);
+  setIsLoadingAnalysis(true);
   setPriceHistory([]);
+  setAnalysis(null);
 
   try {
-    const response = await fetch(
-      `http://127.0.0.1:8000/coins/${coin.id}/history`
-    );
+    const [historyResponse, analysisResponse] = await Promise.all([
+      fetch(`http://127.0.0.1:8000/coins/${coin.id}/history`),
+      fetch(`http://127.0.0.1:8000/coins/${coin.id}/analysis`),
+    ]);
 
-    if (!response.ok) {
+    if (!historyResponse.ok) {
       throw new Error(
-        `Failed to load price history: ${response.status}`
+        `Failed to load price history: ${historyResponse.status}`
       );
     }
 
-    const data: HistoryResponse = await response.json();
-
-    console.log("History response:", data);
-
-    if (!Array.isArray(data.prices)) {
-      throw new Error("Unexpected history response format.");
+    if (!analysisResponse.ok) {
+      throw new Error(
+        `Failed to load analysis: ${analysisResponse.status}`
+      );
     }
 
-    setPriceHistory(data.prices);
+    const historyData: HistoryResponse = await historyResponse.json();
+    const analysisData: AnalysisResponse = await analysisResponse.json();
+
+    setPriceHistory(historyData.prices);
+    setAnalysis(analysisData);
   } catch (error) {
-    console.error("Failed to load coin history:", error);
+    console.error("Failed to load coin data:", error);
     setPriceHistory([]);
+    setAnalysis(null);
   } finally {
     setIsLoadingHistory(false);
+    setIsLoadingAnalysis(false);
   }
 }
 
@@ -421,6 +459,65 @@ async function loadCoinHistory(coin: SearchCoin) {
                   Select a coin to view its price history.
                 </div>
               )}
+          </section>
+          <section className="dashboard-section">
+            <h2>
+              Technical Indicators
+              {selectedCoin && ` — ${selectedCoin.name}`}
+            </h2>
+
+            {isLoadingAnalysis ? (
+              <div className="placeholder-card">
+                Loading technical analysis...
+              </div>
+            ) : analysis ? (
+              <div className="indicator-grid">
+                <div className="indicator-card">
+                  <span>RSI</span>
+                  <strong>
+                    {analysis.indicators.rsi.value ?? "—"}
+                  </strong>
+                  <small>{analysis.indicators.rsi.signal}</small>
+                </div>
+
+                <div className="indicator-card">
+                  <span>SMA</span>
+                  <strong>
+                    {analysis.indicators.sma.value?.toLocaleString() ?? "—"}
+                  </strong>
+                  <small>{analysis.indicators.sma.signal}</small>
+                </div>
+
+                <div className="indicator-card">
+                  <span>EMA</span>
+                  <strong>
+                    {analysis.indicators.ema.value?.toLocaleString() ?? "—"}
+                  </strong>
+                  <small>{analysis.indicators.ema.signal}</small>
+                </div>
+
+                <div className="indicator-card">
+                  <span>MACD</span>
+                  <strong>
+                    {analysis.indicators.macd.value ?? "—"}
+                  </strong>
+                  <small>{analysis.indicators.macd.trend}</small>
+
+                  <div className="macd-details">
+                    <span>
+                      Signal: {analysis.indicators.macd.signal_line ?? "—"}
+                    </span>
+                    <span>
+                      Histogram: {analysis.indicators.macd.histogram ?? "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="placeholder-card">
+                Select a coin to view its technical indicators.
+              </div>
+            )}
           </section>
       </main>
     </div>
