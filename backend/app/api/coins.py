@@ -1,6 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
-from app.services.coingecko import get_coin, search_coin
+from app.services.coingecko import (
+    get_coin,
+    search_coin,
+    get_coin_history,
+)
 
 router = APIRouter()
 
@@ -15,6 +19,19 @@ async def coin(coin_id: str):
         }
 
     return coin
+
+
+@router.get("/coins/{coin_id}/history")
+async def coin_history(coin_id: str):
+    history = await get_coin_history(coin_id)
+
+    if history is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No historical data available for this coin."
+        )
+
+    return history
 
 
 @router.get("/search")
