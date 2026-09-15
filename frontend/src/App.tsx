@@ -519,6 +519,51 @@ async function loadCoinHistory(coin: SearchCoin) {
               </div>
             )}
           </section>
+          <section className="dashboard-section">
+            <h2>
+              Overall Analysis
+              {selectedCoin && ` — ${selectedCoin.name}`}
+            </h2>
+
+            {isLoadingAnalysis ? (
+              <div className="placeholder-card">
+                Loading recommendation...
+              </div>
+            ) : analysis ? (
+              <div className="analysis-summary">
+                <div className="recommendation-card">
+                  <span>Recommendation</span>
+                  <strong>{analysis.overall.recommendation}</strong>
+                </div>
+
+                <div className="analysis-meta">
+                  <div>
+                    <span>Score</span>
+                    <strong>{analysis.overall.score}</strong>
+                  </div>
+
+                  <div>
+                    <span>Strength</span>
+                    <strong>{analysis.overall.strength}</strong>
+                  </div>
+                </div>
+
+                <div className="analysis-reasons">
+                  <span>Why?</span>
+
+                  <ul>
+                    {analysis.overall.reasons.map((reason, index) => (
+                      <li key={index}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="placeholder-card">
+                Select a coin to view its overall analysis.
+              </div>
+            )}
+          </section>
       </main>
     </div>
   );

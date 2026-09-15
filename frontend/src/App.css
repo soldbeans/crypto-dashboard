@@ -230,3 +230,73 @@
     grid-template-columns: 1fr;
   }
 }
+
+.analysis-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recommendation-card {
+  padding: 20px;
+  border: 1px solid #444;
+  border-radius: 12px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recommendation-card span {
+  opacity: 0.7;
+}
+
+.recommendation-card strong {
+  font-size: 1.6rem;
+}
+
+.analysis-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analysis-meta div {
+  padding: 16px;
+  border: 1px solid #444;
+  border-radius: 12px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.analysis-meta span {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.analysis-reasons {
+  padding: 18px;
+  border: 1px solid #444;
+  border-radius: 12px;
+}
+
+.analysis-reasons > span {
+  font-weight: 600;
+}
+
+.analysis-reasons ul {
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
+.analysis-reasons li {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .analysis-meta {
+    grid-template-columns: 1fr;
+  }
+}
