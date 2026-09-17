@@ -5,6 +5,9 @@ from app.database.database import SessionLocal
 from app.database.models import WatchlistCoin
 from app.services.coingecko import get_coins
 
+import httpx
+from fastapi import APIRouter, Depends, HTTPException
+
 router = APIRouter()
 
 
@@ -54,7 +57,19 @@ async def get_watchlist(db: Session = Depends(get_db)):
 
     coin_ids = [coin.coin_id for coin in watchlist]
 
-    return await get_coins(coin_ids)
+    try:
+        return await get_coins(coin_ids)
+    except httpx.HTTPStatusError as error:
+        if error.response.status_code == 429:
+            raise HTTPException(
+                status_code=429,
+                detail="CoinGecko rate limit reached. Please try again later."
+            ) from error
+        
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to retrieve watchlist data."
+        ) from error
 
 @router.delete("/watchlist/{coin_id}")
 def remove_from_watchlist(
@@ -68,10 +83,10 @@ def remove_from_watchlist(
     )
 
     if coin is None:
-        return {
-            "message": "Coin is not in your watchlist",
-            "coin_id": coin_id
-        }
+        raise HTTPException(
+            status_code=404,
+            detail="Coin is not in your watchlist"
+        )
 
     db.delete(coin)
     db.commit()
