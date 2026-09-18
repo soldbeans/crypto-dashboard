@@ -14,6 +14,10 @@ import GlobalMarket, {
   type GlobalMarketData,
 } from "./components/GlobalMarket";
 
+import TrendingCoins, {
+  type TrendingResponse,
+} from "./components/TrendingCoins";
+
 type GlobalMarket = {
   market_cap_usd: number;
   volume_24h_usd: number;
@@ -22,19 +26,6 @@ type GlobalMarket = {
   active_cryptocurrencies: number;
   markets: number;
   last_updated: number;
-};
-
-type TrendingCoin = {
-  id: string;
-  name: string;
-  symbol: string;
-  market_cap_rank: number | null;
-  thumb: string;
-};
-
-type TrendingResponse = {
-  count: number;
-  coins: TrendingCoin[];
 };
 
 type SearchCoin = {
@@ -540,34 +531,11 @@ async function addToWatchlist(coin: SearchCoin) {
         <GlobalMarket
           globalMarket={globalMarket}
           globalError={globalError}
+        />   
+        <TrendingCoins
+          trending={trending}
+          trendingError={trendingError}
         />
-
-        <section className="dashboard-section">
-          <h2>Trending Coins</h2>
-
-          {trendingError ? (
-            <div className="error-card" role="alert">
-              {trendingError}
-            </div>
-          ) : trending ? (
-            <div className="trending-list">
-              {trending.coins.slice(0, 5).map((coin) => (
-                <div className="trending-coin" key={coin.id}>
-                  <img src={coin.thumb} alt={coin.name} />
-
-                  <div className="trending-info">
-                    <strong>{coin.name}</strong>
-                    <span>{coin.symbol}</span>
-                  </div>
-
-                  <span className="rank">#{coin.market_cap_rank ?? "—"}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="placeholder-card">Loading trending coins...</div>
-          )}
-        </section>
         <section className="dashboard-section">
           <h2>Watchlist</h2>
 
