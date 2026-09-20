@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 import GlobalMarket, {
@@ -91,6 +91,8 @@ function App() {
   const [trendingError, setTrendingError] = useState<string | null>(null);
   const [watchlistError, setWatchlistError] = useState<string | null>(null);
   const [pendingCoinId, setPendingCoinId] = useState<string | null>(null);
+  
+  const latestCoinRequest = useRef(0);
 
   useEffect(() => {
     async function fetchGlobalMarket() {
@@ -322,97 +324,134 @@ async function addToWatchlist(coin: SearchCoin) {
   }
 }
 
-  async function loadCoinHistory(coin: SearchCoin) {
-    setSelectedCoin(coin);
 
-    setPriceHistory([]);
-    setAnalysis(null);
+async function loadCoinHistory(coin: SearchCoin) {
+  // Give this selection a unique ID.
+  const requestId = ++latestCoinRequest.current;
 
-    setHistoryError(null);
-    setAnalysisError(null);
+  // Only the newest selection may update the screen.
+  const isLatestRequest = () =>
+    requestId === latestCoinRequest.current;
 
-    setIsLoadingHistory(true);
-    setIsLoadingAnalysis(true);
+  setSelectedCoin(coin);
+  setPriceHistory([]);
+  setAnalysis(null);
+  setHistoryError(null);
+  setAnalysisError(null);
+  setIsLoadingHistory(true);
+  setIsLoadingAnalysis(true);
 
-    // Historical prices
-    async function fetchHistory() {
-      try {
-        const response = await fetch(
-          `http://127.0.0.1:8000/coins/${encodeURIComponent(coin.id)}/history`,
+  async function fetchHistory() {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/coins/${encodeURIComponent(coin.id)}/history`,
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Unable to load price history (HTTP ${response.status}).`,
         );
+      }
 
-        if (!response.ok) {
-          throw new Error(
-            `Unable to load price history (HTTP ${response.status}).`,
-          );
-        }
+      const data: HistoryResponse = await response.json();
 
-        const data: HistoryResponse = await response.json();
+      if (!Array.isArray(data?.prices)) {
+        throw new Error("Invalid price history response.");
+      }
 
-        if (!Array.isArray(data?.prices)) {
-          throw new Error("Invalid price history response.");
-        }
-
+      if (isLatestRequest()) {
         setPriceHistory(data.prices);
-      } catch (error) {
+      }
+    } catch (error) {
+      if (isLatestRequest()) {
         setHistoryError(
           error instanceof Error
             ? error.message
             : "Unable to load price history.",
         );
-      } finally {
+      }
+    } finally {
+      if (isLatestRequest()) {
         setIsLoadingHistory(false);
       }
     }
+  }
 
-    // Technical indicators and overall analysis
-    async function fetchAnalysis() {
-      try {
-        const response = await fetch(
-          `http://127.0.0.1:8000/coins/${encodeURIComponent(coin.id)}/analysis`,
+  async function fetchAnalysis() {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/coins/${encodeURIComponent(coin.id)}/analysis`,
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("Rate limit reached. Please try again later.");
+        }
+
+        throw new Error(
+          `Unable to load analysis (HTTP ${response.status}).`,
         );
+      }
 
-        if (!response.ok) {
-          if (response.status === 429) {
-            throw new Error("Rate limit reached. Please try again later.");
-          }
+      const data: AnalysisResponse = await response.json();
 
-          throw new Error(`Unable to load analysis (HTTP ${response.status}).`);
-        }
+      if (!data?.indicators || !data?.overall) {
+        throw new Error("Invalid analysis response.");
+      }
 
-        const data: AnalysisResponse = await response.json();
-
-        if (!data?.indicators || !data?.overall) {
-          throw new Error("Invalid analysis response.");
-        }
-
+      if (isLatestRequest()) {
         setAnalysis(data);
-      } catch (error) {
+      }
+    } catch (error) {
+      if (isLatestRequest()) {
         setAnalysisError(
-          error instanceof Error ? error.message : "Unable to load analysis.",
+          error instanceof Error
+            ? error.message
+            : "Unable to load analysis.",
         );
-      } finally {
+      }
+    } finally {
+      if (isLatestRequest()) {
         setIsLoadingAnalysis(false);
       }
     }
-
-    await Promise.all([fetchHistory(), fetchAnalysis()]);
   }
 
-  async function removeFromWatchlist(coinId: string) {
-    const response = await fetch(`http://127.0.0.1:8000/watchlist/${coinId}`, {
-      method: "DELETE",
-    });
+  await Promise.all([fetchHistory(), fetchAnalysis()]);
+}
+
+
+async function removeFromWatchlist(coinId: string) {
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/watchlist/${encodeURIComponent(coinId)}`,
+      {
+        method: "DELETE",
+      },
+    );
 
     if (!response.ok) {
-      console.error("Failed to remove coin from watchlist");
-      return;
+      throw new Error(
+        `Unable to remove coin (HTTP ${response.status}).`,
+      );
     }
 
     setWatchlist((currentWatchlist) =>
       currentWatchlist.filter((coin) => coin.id !== coinId),
     );
+  } catch (error) {
+    console.error("Failed to remove coin from watchlist:", error);
+
+    alert(
+      error instanceof TypeError
+        ? "Could not connect to the server. Please check that FastAPI is running."
+        : error instanceof Error
+          ? error.message
+          : "Unable to remove coin from watchlist."
+    );
   }
+}
+
   return (
     <div className="app">
       <header className="header">
