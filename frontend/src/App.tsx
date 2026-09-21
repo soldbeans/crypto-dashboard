@@ -25,9 +25,16 @@ import CoinAnalysis, {
   type AnalysisResponse,
 } from "./components/CoinAnalysis";
 
-type HistoryResponse = {
-  prices: HistoryPoint[];
-};
+import {
+  getGlobalMarket,
+  getTrendingCoins,
+  getWatchlist,
+  searchCoins,
+  addWatchlistCoin,
+  removeWatchlistCoin,
+  getCoinHistory,
+  getCoinAnalysis,
+} from "./api/cryptoApi";
 
 const CACHE_DURATION = 60_000; // 60 seconds
 
@@ -106,23 +113,7 @@ function App() {
       }
 
       try {
-        const response = await fetch(
-          "http://127.0.0.1:8000/global"
-        );
-
-        if (!response.ok) {
-          if (response.status === 429) {
-            throw new Error(
-              "CoinGecko rate limit reached. Please try again later."
-            );
-          }
-
-          throw new Error(
-            `Unable to load global market data (HTTP ${response.status}).`
-          );
-        }
-
-        const data: GlobalMarketData = await response.json();
+        const data = await getGlobalMarket();
 
         setGlobalMarket(data);
         setCachedData("global-market", data);
@@ -130,7 +121,7 @@ function App() {
         setGlobalError(
           error instanceof Error
             ? error.message
-            : "Unable to load global market data."
+            : "Unable to load global market data.",
         );
       }
     }
@@ -146,25 +137,8 @@ function App() {
         setTrending(cached);
         return;
       }
-
       try {
-        const response = await fetch(
-          "http://127.0.0.1:8000/trending"
-        );
-
-        if (!response.ok) {
-          if (response.status === 429) {
-            throw new Error(
-              "CoinGecko rate limit reached. Trending coins will be available again shortly."
-            );
-          }
-
-          throw new Error(
-            `Unable to load trending coins (HTTP ${response.status}).`
-          );
-        }
-
-        const data: TrendingResponse = await response.json();
+        const data = await getTrendingCoins();
 
         setTrending(data);
         setCachedData("trending-coins", data);
@@ -172,7 +146,7 @@ function App() {
         setTrendingError(
           error instanceof Error
             ? error.message
-            : "Unable to load trending coins."
+            : "Unable to load trending coins.",
         );
       }
     }
@@ -184,38 +158,17 @@ function App() {
       setWatchlistError(null);
 
       try {
-        const response = await fetch(
-          "http://127.0.0.1:8000/watchlist"
-        );
-
-        if (!response.ok) {
-          if (response.status === 429) {
-            throw new Error(
-              "CoinGecko rate limit reached. Please try again later."
-            );
-          }
-
-          throw new Error(
-            `Unable to load watchlist (HTTP ${response.status}).`
-          );
-        }
-
-        const data: WatchlistCoin[] = await response.json();
-
-        if (!Array.isArray(data)) {
-          throw new Error("Unexpected watchlist response format.");
-        }
+        const data = await getWatchlist();
 
         setWatchlist(data);
       } catch (error) {
         setWatchlistError(
           error instanceof Error
             ? error.message
-            : "Unable to load watchlist."
+            : "Unable to load watchlist.",
         );
       } finally {
         setIsLoadingWatchlist(false);
-        console.log("Watchlist loading finished");
       }
     }
 
@@ -238,30 +191,20 @@ function App() {
     setSearchResults([]);
 
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/search?query=${encodeURIComponent(query)}`,
-      );
-
-      if (!response.ok) {
-        throw new Error(`Search failed (HTTP ${response.status}).`);
-      }
-
-      const data = await response.json();
-
-      if (!Array.isArray(data)) {
-        throw new Error("Unexpected search response format.");
-      }
+      const data = await searchCoins(query);
 
       setSearchResults(data);
     } catch (error) {
       setSearchError(
-        error instanceof Error ? error.message : "Unable to search coins.",
+        error instanceof Error
+          ? error.message
+          : "Unable to search coins.",
       );
     } finally {
       setIsSearching(false);
     }
   }
-
+  
 async function addToWatchlist(coin: SearchCoin) {
   // NEW: Prevent another Add request while one is running
   if (pendingCoinId !== null) return;
@@ -272,44 +215,11 @@ async function addToWatchlist(coin: SearchCoin) {
   setWatchlistError(null);
 
   try {
-    const response = await fetch(
-      `http://127.0.0.1:8000/watchlist/${encodeURIComponent(coin.id)}`,
-      {
-        method: "POST",
-      }
-    );
+    await addWatchlistCoin(coin.id);
 
-    const responseBody = await response.text();
-
-    console.log("Watchlist POST status:", response.status);
-    console.log("Watchlist POST response:", responseBody);
-
-    if (!response.ok) {
-      throw new Error(
-        `Unable to add ${coin.name} (HTTP ${response.status}): ${responseBody}`
-      );
-    }
-
-    const watchlistResponse = await fetch(
-      "http://127.0.0.1:8000/watchlist"
-    );
-
-    if (!watchlistResponse.ok) {
-      throw new Error(
-        `Unable to refresh watchlist (HTTP ${watchlistResponse.status}).`
-      );
-    }
-
-    const updatedWatchlist: WatchlistCoin[] =
-      await watchlistResponse.json();
-
-    if (!Array.isArray(updatedWatchlist)) {
-      throw new Error("Unexpected watchlist response format.");
-    }
+    const updatedWatchlist = await getWatchlist();
 
     setWatchlist(updatedWatchlist);
-
-    console.log(`Successfully added ${coin.name}.`);
   } catch (error) {
     console.error("Watchlist error:", error);
 
@@ -323,7 +233,6 @@ async function addToWatchlist(coin: SearchCoin) {
     setPendingCoinId(null);
   }
 }
-
 
 async function loadCoinHistory(coin: SearchCoin) {
   // Give this selection a unique ID.
@@ -343,21 +252,7 @@ async function loadCoinHistory(coin: SearchCoin) {
 
   async function fetchHistory() {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/coins/${encodeURIComponent(coin.id)}/history`,
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Unable to load price history (HTTP ${response.status}).`,
-        );
-      }
-
-      const data: HistoryResponse = await response.json();
-
-      if (!Array.isArray(data?.prices)) {
-        throw new Error("Invalid price history response.");
-      }
+      const data = await getCoinHistory(coin.id);
 
       if (isLatestRequest()) {
         setPriceHistory(data.prices);
@@ -379,25 +274,7 @@ async function loadCoinHistory(coin: SearchCoin) {
 
   async function fetchAnalysis() {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/coins/${encodeURIComponent(coin.id)}/analysis`,
-      );
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error("Rate limit reached. Please try again later.");
-        }
-
-        throw new Error(
-          `Unable to load analysis (HTTP ${response.status}).`,
-        );
-      }
-
-      const data: AnalysisResponse = await response.json();
-
-      if (!data?.indicators || !data?.overall) {
-        throw new Error("Invalid analysis response.");
-      }
+      const data = await getCoinAnalysis(coin.id);
 
       if (isLatestRequest()) {
         setAnalysis(data);
@@ -420,21 +297,9 @@ async function loadCoinHistory(coin: SearchCoin) {
   await Promise.all([fetchHistory(), fetchAnalysis()]);
 }
 
-
 async function removeFromWatchlist(coinId: string) {
   try {
-    const response = await fetch(
-      `http://127.0.0.1:8000/watchlist/${encodeURIComponent(coinId)}`,
-      {
-        method: "DELETE",
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Unable to remove coin (HTTP ${response.status}).`,
-      );
-    }
+    await removeWatchlistCoin(coinId);
 
     setWatchlist((currentWatchlist) =>
       currentWatchlist.filter((coin) => coin.id !== coinId),
@@ -447,9 +312,9 @@ async function removeFromWatchlist(coinId: string) {
         ? "Could not connect to the server. Please check that FastAPI is running."
         : error instanceof Error
           ? error.message
-          : "Unable to remove coin from watchlist."
+          : "Unable to remove coin from watchlist.",
     );
-  }
+  }  
 }
 
   return (
