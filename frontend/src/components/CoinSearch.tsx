@@ -67,22 +67,24 @@ export default function CoinSearch({
                 <span>{coin.id}</span>
               </div>
 
-              <button
-                type="button"
-                className="watchlist-button"
-                disabled={pendingCoinId !== null}
-                onClick={() => onAdd(coin)}
-              >
-                {pendingCoinId === coin.id ? "Adding..." : "Add"}
-              </button>
+                <div className="search-result-actions">
+                  <button
+                    type="button"
+                    className="watchlist-button"
+                    disabled={pendingCoinId !== null}
+                    onClick={() => onAdd(coin)}
+                  >
+                    {pendingCoinId === coin.id ? "Adding..." : "Add"}
+                  </button>
 
-              <button
-                type="button"
-                className="watchlist-button"
-                onClick={() => onView(coin)}
-              >
-                View
-              </button>
+                  <button
+                    type="button"
+                    className="watchlist-button"
+                    onClick={() => onView(coin)}
+                  >
+                    View
+                  </button>
+                </div>
             </div>
           ))}
         </div>

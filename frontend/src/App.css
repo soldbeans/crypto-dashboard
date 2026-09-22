@@ -309,3 +309,12 @@
   color: inherit;
   line-height: 1.5;
 }
+
+/* Coin Search actions */
+
+.search-result-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
