@@ -14,18 +14,37 @@ type WatchlistProps = {
   watchlist: WatchlistCoin[];
   isLoadingWatchlist: boolean;
   watchlistError: string | null;
+  pendingRemoveCoinId: string | null;
   onRemove: (coinId: string) => void;
+  watchlistMessage: string | null;
+  watchlistMessageType: "success" | "error" | null;
 };
 
 export default function Watchlist({
   watchlist,
   isLoadingWatchlist,
   watchlistError,
+  watchlistMessage,
+  watchlistMessageType,
+  pendingRemoveCoinId,
   onRemove,
 }: WatchlistProps) {
   return (
     <section className="dashboard-section">
       <h2>Watchlist</h2>
+
+      {watchlistMessage && (
+        <div
+          className={
+            watchlistMessageType === "error"
+              ? "watchlist-message error"
+              : "watchlist-message success"
+          }
+          role={watchlistMessageType === "error" ? "alert" : "status"}
+        >
+          {watchlistMessage}
+        </div>
+      )}
 
       {isLoadingWatchlist ? (
         <div className="placeholder-card">
@@ -56,9 +75,10 @@ export default function Watchlist({
                 <button
                   type="button"
                   className="remove-button"
+                  disabled={pendingRemoveCoinId !== null}
                   onClick={() => onRemove(coin.id)}
                 >
-                  Remove
+                  {pendingRemoveCoinId === coin.id ? "Removing..." : "Remove"}
                 </button>
               </div>
             </div>

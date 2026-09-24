@@ -189,6 +189,11 @@
   cursor: pointer;
 }
 
+.remove-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .remove-button:hover {
   opacity: 0.8;
 }
@@ -317,4 +322,58 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chart-header h2 {
+  margin: 0;
+}
+
+.range-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.range-button {
+  padding: 6px 10px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.range-button:hover {
+  opacity: 0.8;
+}
+
+.range-button.active {
+  border-color: #888;
+  font-weight: 600;
+}
+
+.range-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.watchlist-message {
+  padding: 12px 14px;
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+.watchlist-message.success {
+  border: 1px solid #4caf50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.watchlist-message.error {
+  border: 1px solid #dc5555;
+  background: rgba(220, 85, 85, 0.1);
 }

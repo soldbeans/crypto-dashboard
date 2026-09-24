@@ -18,6 +18,8 @@ type HistoricalPriceChartProps = {
   history: HistoryPoint[];
   isLoading: boolean;
   error: string | null;
+  selectedDays: number;
+  onRangeChange: (days: number) => void;
 };
 
 export default function HistoricalPriceChart({
@@ -25,6 +27,8 @@ export default function HistoricalPriceChart({
   history,
   isLoading,
   error,
+  selectedDays,
+  onRangeChange,
 }: HistoricalPriceChartProps) {
   const chartData = history.map((point) => ({
     ...point,
@@ -33,11 +37,26 @@ export default function HistoricalPriceChart({
 
   return (
     <section className="dashboard-section">
-      <h2>
-        Historical Price
-        {coinName ? ` — ${coinName}` : ""}
-      </h2>
+      <div className="chart-header">
+        <h2>
+          Historical Price
+          {coinName ? ` — ${coinName}` : ""}
+        </h2>
 
+        <div className="range-buttons">
+          {[7, 30, 90].map((days) => (
+            <button
+              key={days}
+              type="button"
+              className={selectedDays === days ? "range-button active" : "range-button"}
+              onClick={() => onRangeChange(days)}
+              disabled={!coinName}
+            >
+              {days}D
+            </button>
+          ))}
+        </div>
+      </div>
       {isLoading ? (
         <div className="placeholder-card">
           Loading price history...

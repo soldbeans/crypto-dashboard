@@ -109,9 +109,10 @@ export async function removeWatchlistCoin(
 
 export async function getCoinHistory(
   coinId: string,
+  days: number = 30,
 ): Promise<HistoryResponse> {
   const response = await fetch(
-    `${API_BASE_URL}/coins/${encodeURIComponent(coinId)}/history`,
+    `${API_BASE_URL}/coins/${encodeURIComponent(coinId)}/history?days=${days}`,
   );
 
   await ensureOk(response, "Unable to load price history");

@@ -85,6 +85,9 @@ function App() {
   const [searchResults, setSearchResults] = useState<SearchCoin[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [watchlist, setWatchlist] = useState<WatchlistCoin[]>([]);
+  const [watchlistMessage, setWatchlistMessage] = useState<string | null>(null);
+  const [watchlistMessageType, setWatchlistMessageType] =
+  useState<"success" | "error" | null>(null);
   const [isLoadingWatchlist, setIsLoadingWatchlist] = useState(true);
   const [selectedCoin, setSelectedCoin] = useState<SearchCoin | null>(null);
   const [priceHistory, setPriceHistory] = useState<HistoryPoint[]>([]);
@@ -98,6 +101,9 @@ function App() {
   const [trendingError, setTrendingError] = useState<string | null>(null);
   const [watchlistError, setWatchlistError] = useState<string | null>(null);
   const [pendingCoinId, setPendingCoinId] = useState<string | null>(null);
+  const [pendingRemoveCoinId, setPendingRemoveCoinId] =
+  useState<string | null>(null);
+  const [historyDays, setHistoryDays] = useState(30);
   
   const latestCoinRequest = useRef(0);
 
@@ -206,13 +212,15 @@ function App() {
   }
   
 async function addToWatchlist(coin: SearchCoin) {
-  // NEW: Prevent another Add request while one is running
   if (pendingCoinId !== null) return;
 
-  // NEW: Remember which coin is being added
   setPendingCoinId(coin.id);
 
   setWatchlistError(null);
+
+  // Clear the previous action message
+  setWatchlistMessage(null);
+  setWatchlistMessageType(null);
 
   try {
     await addWatchlistCoin(coin.id);
@@ -220,16 +228,24 @@ async function addToWatchlist(coin: SearchCoin) {
     const updatedWatchlist = await getWatchlist();
 
     setWatchlist(updatedWatchlist);
+
+    // Show success message
+    setWatchlistMessage(`${coin.name} added to watchlist.`);
+    setWatchlistMessageType("success");
   } catch (error) {
     console.error("Watchlist error:", error);
 
-    alert(
-      error instanceof Error
-        ? error.message
-        : "Unable to add coin to watchlist."
+    // Show inline error instead of alert()
+    setWatchlistMessage(
+      error instanceof TypeError
+        ? "Could not connect to the server. Please check that FastAPI is running."
+        : error instanceof Error
+          ? error.message
+          : "Unable to add coin to watchlist.",
     );
+
+    setWatchlistMessageType("error");
   } finally {
-    // NEW: Always unlock the Add button
     setPendingCoinId(null);
   }
 }
@@ -252,7 +268,7 @@ async function loadCoinHistory(coin: SearchCoin) {
 
   async function fetchHistory() {
     try {
-      const data = await getCoinHistory(coin.id);
+      const data = await getCoinHistory(coin.id, historyDays);
 
       if (isLatestRequest()) {
         setPriceHistory(data.prices);
@@ -297,24 +313,75 @@ async function loadCoinHistory(coin: SearchCoin) {
   await Promise.all([fetchHistory(), fetchAnalysis()]);
 }
 
+async function changeHistoryRange(days: number) {
+  setHistoryDays(days);
+
+  if (!selectedCoin) {
+    return;
+  }
+
+  const requestId = ++latestCoinRequest.current;
+
+  setPriceHistory([]);
+  setHistoryError(null);
+  setIsLoadingHistory(true);
+
+  try {
+    const data = await getCoinHistory(selectedCoin.id, days);
+
+    if (requestId === latestCoinRequest.current) {
+      setPriceHistory(data.prices);
+    }
+  } catch (error) {
+    if (requestId === latestCoinRequest.current) {
+      setHistoryError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load price history.",
+      );
+    }
+  } finally {
+    if (requestId === latestCoinRequest.current) {
+      setIsLoadingHistory(false);
+    }
+  }
+}
+
 async function removeFromWatchlist(coinId: string) {
+  if (pendingRemoveCoinId !== null) return;
+
+  setPendingRemoveCoinId(coinId);
+
+  // Clear the previous action message
+  setWatchlistMessage(null);
+  setWatchlistMessageType(null);
+
   try {
     await removeWatchlistCoin(coinId);
 
     setWatchlist((currentWatchlist) =>
       currentWatchlist.filter((coin) => coin.id !== coinId),
     );
+
+    // Show success message
+    setWatchlistMessage("Coin removed from watchlist.");
+    setWatchlistMessageType("success");
   } catch (error) {
     console.error("Failed to remove coin from watchlist:", error);
 
-    alert(
+    // Show inline error instead of alert()
+    setWatchlistMessage(
       error instanceof TypeError
         ? "Could not connect to the server. Please check that FastAPI is running."
         : error instanceof Error
           ? error.message
           : "Unable to remove coin from watchlist.",
     );
-  }  
+
+    setWatchlistMessageType("error");
+  } finally {
+    setPendingRemoveCoinId(null);
+  }
 }
 
   return (
@@ -350,6 +417,9 @@ async function removeFromWatchlist(coinId: string) {
           watchlist={watchlist}
           isLoadingWatchlist={isLoadingWatchlist}
           watchlistError={watchlistError}
+          watchlistMessage={watchlistMessage}
+          watchlistMessageType={watchlistMessageType}
+          pendingRemoveCoinId={pendingRemoveCoinId}
           onRemove={removeFromWatchlist}
         />
         <HistoricalPriceChart
@@ -357,6 +427,8 @@ async function removeFromWatchlist(coinId: string) {
           history={priceHistory}
           isLoading={isLoadingHistory}
           error={historyError}
+          selectedDays={historyDays}
+          onRangeChange={changeHistoryRange}
         />
         <CoinAnalysis
           coinName={selectedCoin?.name ?? null}

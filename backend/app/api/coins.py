@@ -22,16 +22,22 @@ async def coin(coin_id: str):
 
 
 @router.get("/coins/{coin_id}/history")
-async def coin_history(coin_id: str):
-    history = await get_coin_history(coin_id)
-
-    if history is None:
+async def coin_history(coin_id: str, days: int = 30):
+    if days not in (7, 30, 90):
         raise HTTPException(
-            status_code=404,
-            detail="No historical data available for this coin."
+            status_code=400,
+            detail="days must be one of: 7, 30, 90",
         )
 
-    return history
+    data = await get_coin_history(coin_id, days)
+
+    if not data:
+        raise HTTPException(
+            status_code=404,
+            detail="Price history not found.",
+        )
+
+    return data
 
 
 @router.get("/search")
