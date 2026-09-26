@@ -377,3 +377,24 @@
   border: 1px solid #dc5555;
   background: rgba(220, 85, 85, 0.1);
 }
+
+.watchlist-button:focus-visible,
+.remove-button:focus-visible,
+.range-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.watchlist-button,
+.remove-button,
+.range-button {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.watchlist-button:hover:not(:disabled),
+.remove-button:hover:not(:disabled),
+.range-button:hover:not(:disabled) {
+  opacity: 0.8;
+}

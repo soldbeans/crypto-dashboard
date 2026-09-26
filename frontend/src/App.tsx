@@ -108,6 +108,21 @@ function App() {
   const latestCoinRequest = useRef(0);
 
   useEffect(() => {
+  if (watchlistMessageType !== "success" || !watchlistMessage) {
+    return;
+  }
+
+  const timer = window.setTimeout(() => {
+    setWatchlistMessage(null);
+    setWatchlistMessageType(null);
+  }, 3000);
+
+  return () => {
+    window.clearTimeout(timer);
+  };
+}, [watchlistMessage, watchlistMessageType]);
+
+  useEffect(() => {
     async function fetchGlobalMarket() {
       setGlobalError(null);
 
@@ -350,6 +365,10 @@ async function changeHistoryRange(days: number) {
 async function removeFromWatchlist(coinId: string) {
   if (pendingRemoveCoinId !== null) return;
 
+  const coinToRemove = watchlist.find(
+    (coin) => coin.id === coinId
+  );
+
   setPendingRemoveCoinId(coinId);
 
   // Clear the previous action message
@@ -363,8 +382,11 @@ async function removeFromWatchlist(coinId: string) {
       currentWatchlist.filter((coin) => coin.id !== coinId),
     );
 
-    // Show success message
-    setWatchlistMessage("Coin removed from watchlist.");
+    setWatchlistMessage(
+      coinToRemove
+        ? `${coinToRemove.name} removed from watchlist.`
+        : "Coin removed from watchlist.",
+    );
     setWatchlistMessageType("success");
   } catch (error) {
     console.error("Failed to remove coin from watchlist:", error);
