@@ -31,12 +31,27 @@
 .dashboard-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .dashboard-section h2 {
   margin: 0;
   font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Shared card styling */
+
+.market-card,
+.trending-coin,
+.watchlist-item,
+.indicator-card,
+.recommendation-card,
+.analysis-meta div,
+.analysis-reasons,
+.placeholder-card {
+  border: 1px solid #444;
+  border-radius: 12px;
 }
 
 /* Placeholder sections */
@@ -84,6 +99,14 @@
 @media (max-width: 768px) {
   .app {
     padding: 20px;
+  }
+
+  .header {
+    margin-bottom: 24px;
+  }
+
+  .header h1 {
+    font-size: 1.75rem;
   }
 
   .dashboard {
@@ -165,11 +188,15 @@
   text-align: right;
 }
 
-.watchlist-button {
-  padding: 8px 14px;
+.watchlist-button,
+.remove-button,
+.range-button {
+  min-height: 36px;
+  padding: 8px 12px;
   border: 1px solid #444;
   border-radius: 8px;
   cursor: pointer;
+  font: inherit;
 }
 
 .watchlist-button:hover {
@@ -397,4 +424,23 @@
 .remove-button:hover:not(:disabled),
 .range-button:hover:not(:disabled) {
   opacity: 0.8;
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding: 16px;
+  }
+
+  .dashboard {
+    gap: 20px;
+  }
+
+  .watchlist-item {
+    align-items: flex-start;
+  }
+
+  .watchlist-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
 }
